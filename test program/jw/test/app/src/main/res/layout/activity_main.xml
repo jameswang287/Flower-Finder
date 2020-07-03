@@ -8,12 +8,12 @@
 
     <ImageView
         android:id="@+id/image"
-        app:layout_constraintTop_toTopOf="parent"
         android:layout_width="match_parent"
         android:layout_height="400dp"
         android:layout_marginBottom="20dp"
+        android:contentDescription="@string/todo"
         android:scaleType="fitCenter"
-        android:contentDescription="@string/todo" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/result_text"
@@ -21,21 +21,33 @@
         android:layout_height="wrap_content"
         android:layout_gravity="top"
         android:text=""
+        android:gravity="center_horizontal"
+        android:textAllCaps="true"
         android:textSize="20sp"
         android:textStyle="bold"
-        android:textAllCaps="true"
-        android:textAlignment="center"
-        app:layout_constraintTop_toTopOf="@id/button"
-        app:layout_constraintBottom_toBottomOf="@+id/image" />
+        app:layout_constraintBottom_toBottomOf="@+id/image"
+        app:layout_constraintTop_toTopOf="@id/photo" />
+
+    <Button
+        android:id="@+id/photo"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="@string/take_photo"
+        app:layout_constraintBottom_toBottomOf="@+id/result_text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/button"/>
 
     <Button
         android:id="@+id/button"
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="@string/load_image"
-        app:layout_constraintBottom_toBottomOf="@+id/result_text"
-        app:layout_constraintTop_toTopOf="@+id/detect"
-        />
+        app:layout_constraintBottom_toBottomOf="@+id/photo"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/detect" />
 
     <Button
         android:id="@+id/detect"
@@ -43,8 +55,7 @@
         android:layout_height="wrap_content"
         android:text="@string/detect"
         android:layout_marginBottom="50dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        />
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
