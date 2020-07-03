@@ -12,7 +12,8 @@
         android:layout_width="match_parent"
         android:layout_height="400dp"
         android:layout_marginBottom="20dp"
-        android:scaleType="fitCenter" />
+        android:scaleType="fitCenter"
+        android:contentDescription="@string/todo" />
 
     <TextView
         android:id="@+id/result_text"
@@ -20,7 +21,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="top"
         android:text=""
-        android:textSize="20dp"
+        android:textSize="20sp"
         android:textStyle="bold"
         android:textAllCaps="true"
         android:textAlignment="center"
@@ -31,7 +32,7 @@
         android:id="@+id/button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Load Image"
+        android:text="@string/load_image"
         app:layout_constraintBottom_toBottomOf="@+id/result_text"
         app:layout_constraintTop_toTopOf="@+id/detect"
         />
@@ -40,7 +41,7 @@
         android:id="@+id/detect"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Detect"
+        android:text="@string/detect"
         android:layout_marginBottom="50dp"
         app:layout_constraintBottom_toBottomOf="parent"
         />
