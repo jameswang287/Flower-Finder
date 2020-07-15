@@ -1,6 +1,7 @@
 <resources>
-    <string name="app_name">test</string>
-    <string name="load_image">Load Image</string>
+    <string name="app_name">Flower Finder</string>
+    <string name="load_image">Detect saved Image</string>
     <string name="detect">Detect</string>
+    <string name="take_picture">Take new Picture</string>
     <string name="todo">TODO</string>
 </resources>
