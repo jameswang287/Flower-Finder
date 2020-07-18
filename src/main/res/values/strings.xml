@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Flower Finder</string>
+    <string name="load_image">Detect saved Image</string>
+    <string name="detect">Detect</string>
+    <string name="take_picture">Take new Picture</string>
+    <string name="todo">TODO</string>
+    <string name="tab_text_1">Detect</string>
+    <string name="tab_text_2">History</string>
+    <string name="image">image</string>
+</resources>
