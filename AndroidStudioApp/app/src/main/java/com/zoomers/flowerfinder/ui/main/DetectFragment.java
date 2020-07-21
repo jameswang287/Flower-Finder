@@ -2,19 +2,22 @@ package com.zoomers.flowerfinder.ui.main;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
+import android.location.Location;
+import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -40,16 +43,13 @@ import org.pytorch.torchvision.TensorImageUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintWriter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Scanner;
 import java.io.BufferedWriter;
 
 /**
@@ -78,10 +78,12 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
 
     //Location objects
     private LocationManager locationManager;
+    private LocationListener locationListener;
     private String latitude;
     private String longitude;
+
+    //Local directory for storing history and results for later
     private String appDirectory;
-    File flowerDir;
 
     /**
      * Saves the bitmap and its result tag to the disk and history respectively.
@@ -94,10 +96,17 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
      */
     @RequiresApi(api = Build.VERSION_CODES.O)
     public void saveBitmap(Bitmap bitmap, String result) {
-        // Assume block needs to be inside a Try/Catch block.
+
+        if (ActivityCompat.checkSelfPermission(getActivity().getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(getActivity().getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.ACCESS_FINE_LOCATION,Manifest.permission.INTERNET}
+                        ,10);
+            }
+            return;
+        }
+        locationManager.requestLocationUpdates("gps", 5000, 0, locationListener);
+
         try {
-            latitude = "";
-            longitude = "";
             OutputStream fOut = null;
 
             LocalDateTime currentDateTime = LocalDateTime.now();
@@ -132,11 +141,9 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
             } catch(IOException e){
                 e.printStackTrace();
             }
-
-
             printer();
-
-            MediaStore.Images.Media.insertImage(getActivity().getContentResolver(), file.getAbsolutePath(), file.getName(), file.getName());
+            MediaStore.Images.Media.insertImage(getActivity().getContentResolver(),
+                    file.getAbsolutePath(), file.getName(), file.getName());
         } catch(IOException e){
             Log.d("FlowerFinder", "Cannot write to disk");
             checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE ,WRITE_PERMISSION_CODE);
@@ -209,6 +216,16 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
         String result = "";
         Bitmap bitmap = null;
         checkPermission(Manifest.permission.ACCESS_FINE_LOCATION, GPS_PERMISSION_CODE);
+        if (ActivityCompat.checkSelfPermission(getActivity().getApplicationContext(),
+                Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(getActivity().getApplicationContext(),
+                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,
+                                Manifest.permission.ACCESS_FINE_LOCATION}
+                        ,GPS_PERMISSION_CODE);
+            }
+        }
 
         //Getting the image from the image view
         try {
@@ -280,6 +297,8 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        longitude = "";
+        latitude = "";
         super.onCreate(savedInstanceState);
         PageViewModel pageViewModel = ViewModelProviders.of(this).get(PageViewModel.class);
         int index = 1;
@@ -289,12 +308,33 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
         pageViewModel.setIndex(index);
         //Loading the model file.
         try {
-            modelModule = Module.load(fetchModelFile(DetectFragment.this, "flower_finder_resnet18_traced.pt"));
+            modelModule = Module.load(fetchModelFile(DetectFragment.this,
+                    "flower_finder_resnet18_traced.pt"));
         } catch (IOException e) {
-            Toast toast = Toast.makeText(getActivity().getApplicationContext(),"Cannot find Model file.",Toast.LENGTH_SHORT);
+            Toast toast = Toast.makeText(getActivity().getApplicationContext(),
+                    "Cannot find Model file.",Toast.LENGTH_SHORT);
             toast.show();
         }
-        //flowerDir = new File(getActivity().getApplicationContext().getFilesDir(),"s");
+        locationManager = (LocationManager)getActivity().getSystemService(Context.LOCATION_SERVICE);
+        locationListener = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                longitude = Double.toString(location.getLongitude());
+                latitude = Double.toString(location.getLatitude());
+            }
+            @Override
+            public void onStatusChanged(String s, int i, Bundle bundle) {
+            }
+            @Override
+            public void onProviderEnabled(String s) {
+            }
+            @Override
+            public void onProviderDisabled(String s) {
+                Intent i = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivity(i);
+            }
+        };
+
         appDirectory = Environment.getExternalStorageDirectory().getAbsolutePath();
         appDirectory = appDirectory + "/flowerfinder";
         File appdir = new File(appDirectory);
@@ -304,9 +344,9 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
     }
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater,
+                             ViewGroup container, Bundle savedInstanceState) {
         checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE, WRITE_PERMISSION_CODE);
-
         View view = inflater.inflate(R.layout.detect_layout, container, false);
         loadImageButton = view.findViewById(R.id.load_img_button);
         takePictureButton = view.findViewById(R.id.take_pic_button);
@@ -352,7 +392,8 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
             Uri selectedImage = data.getData();
             String[] filePathColumn = { MediaStore.Images.Media.DATA };
 
-            Cursor cursor = getActivity().getApplicationContext().getContentResolver().query(selectedImage,
+            Cursor cursor = getActivity().
+                    getApplicationContext().getContentResolver().query(selectedImage,
                     filePathColumn, null, null, null);
             cursor.moveToFirst();
 
@@ -384,5 +425,7 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
                 e.printStackTrace();
             }
         }
+
     }
+
 }
