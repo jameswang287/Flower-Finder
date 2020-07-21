@@ -107,11 +107,12 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
             String filename = "FlowerFinder" + dateTimeAppend + ".jpg";
             Log.d("DIFF", filename);
 
-            File pictureDir = new File(appDirectory + "/pictures:");
+            File pictureDir = new File(appDirectory + "/pictures");
             if (!pictureDir.exists()){
                 pictureDir.mkdirs();
             }
             File file = new File(appDirectory + "/pictures", "/"+filename);
+
             fOut = new FileOutputStream(file);
             // saving the Bitmap to a file compressed as a JPEG
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
@@ -119,13 +120,12 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
             fOut.close();
 
             try {
-                String newLn = filename + ", " + result + ", " + latitude + ", " + longitude;
-                File history = new File(appDirectory + "/history.csv");
-                Log.d("PATH",appDirectory);
+                String newLn = filename + ", " + result + ", " + latitude + ", " + longitude + "\n";
+                File history = new File(appDirectory, "/history.csv");
                 if(!history.exists()) {
                     history.createNewFile();
                 }
-                FileWriter fileWritter = new FileWriter(history.getName(),true);
+                FileWriter fileWritter = new FileWriter(history,true);
                 BufferedWriter bw = new BufferedWriter(fileWritter);
                 bw.write(newLn);
                 bw.close();
