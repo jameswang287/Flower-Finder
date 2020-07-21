@@ -13,6 +13,7 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -80,6 +81,7 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
     private String latitude;
     private String longitude;
     private String appDirectory;
+    File flowerDir;
 
     /**
      * Saves the bitmap and its result tag to the disk and history respectively.
@@ -88,12 +90,12 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
      * @param bitmap
      * @param result
      * @throws IOException
+     * @throws IOException
      */
     @RequiresApi(api = Build.VERSION_CODES.O)
-    public void saveBitmap(Bitmap bitmap, String result) throws IOException {
+    public void saveBitmap(Bitmap bitmap, String result) {
         // Assume block needs to be inside a Try/Catch block.
         try {
-
             latitude = "";
             longitude = "";
             OutputStream fOut = null;
@@ -102,20 +104,24 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
             DateTimeFormatter dateTimeFormat = DateTimeFormatter.ofPattern("MMddyyyyHHmmss");
 
             String dateTimeAppend = currentDateTime.format(dateTimeFormat);
-            String filename = "FlowerFinder" + dateTimeAppend;
+            String filename = "FlowerFinder" + dateTimeAppend + ".jpg";
             Log.d("DIFF", filename);
 
-            File file = new File(appDirectory, "/"+filename);
+            File pictureDir = new File(appDirectory + "/pictures:");
+            if (!pictureDir.exists()){
+                pictureDir.mkdirs();
+            }
+            File file = new File(appDirectory + "/pictures", "/"+filename);
             fOut = new FileOutputStream(file);
-
-            // saving the Bitmap to a file compressed as a JPEG with 85% compression
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 85, fOut);
+            // saving the Bitmap to a file compressed as a JPEG
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
             fOut.flush();
             fOut.close();
 
             try {
                 String newLn = filename + ", " + result + ", " + latitude + ", " + longitude;
                 File history = new File(appDirectory + "/history.csv");
+                Log.d("PATH",appDirectory);
                 if(!history.exists()) {
                     history.createNewFile();
                 }
@@ -288,16 +294,12 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
             Toast toast = Toast.makeText(getActivity().getApplicationContext(),"Cannot find Model file.",Toast.LENGTH_SHORT);
             toast.show();
         }
-        //get the directory for the app
-        PackageManager m = getActivity().getApplicationContext().getPackageManager();
-        String s = getActivity().getApplicationContext().getPackageName();
-        try {
-            PackageInfo p = m.getPackageInfo(s, 0);
-            appDirectory = p.applicationInfo.dataDir;
-            Log.d("FOUND", appDirectory);
-
-        } catch (PackageManager.NameNotFoundException e) {
-            Log.w("FlowerFinder", "Error Package name not found ", e);
+        //flowerDir = new File(getActivity().getApplicationContext().getFilesDir(),"s");
+        appDirectory = Environment.getExternalStorageDirectory().getAbsolutePath();
+        appDirectory = appDirectory + "/flowerfinder";
+        File appdir = new File(appDirectory);
+        if(!appdir.exists()){
+            appdir.mkdirs();
         }
     }
 
