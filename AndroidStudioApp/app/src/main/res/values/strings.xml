@@ -7,4 +7,6 @@
     <string name="tab_text_1">Detect</string>
     <string name="tab_text_2">History</string>
     <string name="image">image</string>
+    <string name="Back">Back</string>
+    <string name="title_activity_map">Map</string>
 </resources>

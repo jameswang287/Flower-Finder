@@ -25,7 +25,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -42,7 +41,6 @@ import org.pytorch.Tensor;
 import org.pytorch.torchvision.TensorImageUtils;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -51,6 +49,7 @@ import java.io.OutputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.io.BufferedWriter;
+import static com.zoomers.flowerfinder.ui.main.PictureContent.loadImage;
 
 /**
  * A fragment/page to perform all detection functionality.
@@ -85,14 +84,17 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
     //Local directory for storing history and results for later
     private String appDirectory;
 
+    // Listener
+    OnPhotoTakenListener callback;
+
+
     /**
-     * Saves the bitmap and its result tag to the disk and history respectively.
+     * Saves the bitmap and its result and location tag to the disk and history respectively.
      * The bitmap is saved as a JPG to a folder in the app's base directory
-     *
-     * @param bitmap
-     * @param result
-     * @throws IOException
-     * @throws IOException
+     * @param bitmap is the bitmap to store
+     * @param result is the class the bitmap belongs to
+     * @throws IOException If the bitmap cannot be written to the disk
+     * @throws IOException If the history cannot be written to the disk
      */
     @RequiresApi(api = Build.VERSION_CODES.O)
     public void saveBitmap(Bitmap bitmap, String result) {
@@ -114,7 +116,7 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
 
             String dateTimeAppend = currentDateTime.format(dateTimeFormat);
             String filename = "FlowerFinder" + dateTimeAppend + ".jpg";
-            Log.d("DIFF", filename);
+            Log.d("DIFF", appDirectory);
 
             File pictureDir = new File(appDirectory + "/pictures");
             if (!pictureDir.exists()){
@@ -134,14 +136,18 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
                 if(!history.exists()) {
                     history.createNewFile();
                 }
-                FileWriter fileWritter = new FileWriter(history,true);
-                BufferedWriter bw = new BufferedWriter(fileWritter);
+                FileWriter fileWriter = new FileWriter(history,true);
+                BufferedWriter bw = new BufferedWriter(fileWriter);
                 bw.write(newLn);
                 bw.close();
             } catch(IOException e){
-                e.printStackTrace();
+                checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE,WRITE_PERMISSION_CODE);
             }
-            printer();
+            MediaStore.Images.Media.insertImage(getActivity().getContentResolver(), file.getAbsolutePath(), file.getName(), file.getName());
+            // load new image into PictureContent List
+            loadImage(file, result, latitude, longitude);
+            // signal listener to update history tab
+            callback.onPhotoTaken();
             MediaStore.Images.Media.insertImage(getActivity().getContentResolver(),
                     file.getAbsolutePath(), file.getName(), file.getName());
         } catch(IOException e){
@@ -149,28 +155,13 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
             checkPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE ,WRITE_PERMISSION_CODE);
         }
     }
-    public void printer() throws IOException {
-
-        File file = new File(appDirectory + "/history.csv");
-        FileInputStream fis = new FileInputStream(file);
-        Log.d("Printer","file content: ");
-        int r=0;
-        String read = "";
-        while((r=fis.read())!=-1)
-        {
-                 read = read + (char)r;//prints the content of the file
-        }
-        Log.d("PRINTER", read);
-    }
 
     /**
      * Function to get the model
-     * @param context
-     * @param modelName
-     * @return
-     * @throws IOException
+     * @param modelName is the name of the model to get a path to
+     * @return the model path as a String
      */
-    public String fetchModelFile(DetectFragment context, String modelName) throws IOException {
+    public String fetchModelFile(String modelName) {
         File file = new File(getActivity().getApplicationContext().getFilesDir(), modelName);
         if (file.exists() && file.length() > 0) {
             return file.getAbsolutePath();
@@ -193,9 +184,9 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
     }
 
     /**
-     *
-     * @param index
-     * @return
+     * This fragment/page to house all detection ui
+     * @param index is the index/page number
+     * @return the fragment/page
      */
     public static DetectFragment newInstance(int index) {
         DetectFragment fragment = new DetectFragment();
@@ -287,12 +278,6 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
                     new String[] { permission },
                     requestCode);
         }
-        else {
-            Toast.makeText(getActivity().getApplicationContext(),
-                    permission + " Permission already granted",
-                    Toast.LENGTH_SHORT)
-                    .show();
-        }
     }
 
     @Override
@@ -300,6 +285,8 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
         longitude = "";
         latitude = "";
         super.onCreate(savedInstanceState);
+        longitude = "";
+        latitude = "";
         PageViewModel pageViewModel = ViewModelProviders.of(this).get(PageViewModel.class);
         int index = 1;
         if (getArguments() != null) {
@@ -307,14 +294,7 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
         }
         pageViewModel.setIndex(index);
         //Loading the model file.
-        try {
-            modelModule = Module.load(fetchModelFile(DetectFragment.this,
-                    "flower_finder_resnet18_traced.pt"));
-        } catch (IOException e) {
-            Toast toast = Toast.makeText(getActivity().getApplicationContext(),
-                    "Cannot find Model file.",Toast.LENGTH_SHORT);
-            toast.show();
-        }
+        modelModule = Module.load(fetchModelFile("flower_finder_resnet18_traced.pt"));
         locationManager = (LocationManager)getActivity().getSystemService(Context.LOCATION_SERVICE);
         locationListener = new LocationListener() {
             @Override
@@ -334,7 +314,6 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
                 startActivity(i);
             }
         };
-
         appDirectory = Environment.getExternalStorageDirectory().getAbsolutePath();
         appDirectory = appDirectory + "/flowerfinder";
         File appdir = new File(appDirectory);
@@ -412,6 +391,7 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
                 e.printStackTrace();
             }
         }
+        //if can take picture, do so.
         if (requestCode == CAMERA_PERMISSION_CODE && resultCode == Activity.RESULT_OK){
             Log.d("FlowerFinder", "Here");
 
@@ -428,4 +408,11 @@ public class DetectFragment extends Fragment implements View.OnClickListener {
 
     }
 
+    public void setOnPhotoTakenListener(OnPhotoTakenListener callback) {
+        this.callback = callback;
+    }
+
+    public interface OnPhotoTakenListener {
+        void onPhotoTaken();
+    }
 }
