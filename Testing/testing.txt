@@ -1,0 +1,9 @@
+Unit tests:
+After the training of the model, a collection of test images was used to validate the accuracy of the model; the images were fed into the model to test its output and accuracy was over 94%.
+The gui elements of the app were heavily tested.
+We tried every possibility/combination of permissions enabled and disabled to see how the app would react.
+We tried revoking permissions in the middle of running the app.
+We used different virtual machines and physical devices to test the app.
+We had JUnit tests to verify that directories and files were being created correctly.
+Since there were not algorithms that produced calculations, the types of tests that could be done through a JUnit test were limited.
+Testing was heavily reliant on physical tapping on a mobile device.
