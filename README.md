@@ -14,4 +14,10 @@ To view the history, the user simply selects or swipes to the history tab, which
 
 Installation can be done through the unsigned flowerfinder.apk. Enable permissions to install the app locally.
 
+![Demo1](https://people.ucsc.edu/~jwang402/flowerfinder/fpic/2.png)
+![Demo1](https://people.ucsc.edu/~jwang402/flowerfinder/fpic/3.png)
+![Demo1](https://people.ucsc.edu/~jwang402/flowerfinder/fpic/4.png)
+![Demo1](https://people.ucsc.edu/~jwang402/flowerfinder/fpic/5.png)
+
+
 Known bugs: Location may not be detected until the 2nd or 3rd detection. The first time opening the camera may close the app until the permission is enabled.
